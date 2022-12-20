@@ -183,6 +183,9 @@ public class vStorm implements IScheduler {
             for (Map.Entry<WorkerSlot, List<ExecutorDetails>> entry : nodePortToExecutors.entrySet()) {
                 WorkerSlot nodePort = entry.getKey();
                 List<ExecutorDetails> executors = entry.getValue();
+                System.out.println("nodeport = "+nodePort.toString());
+                System.out.println("topologyId = "+topologyId.toString());
+                System.out.println("executors = "+executors.toString());
                 cluster.assign(nodePort, topologyId, executors);
             }
         }
