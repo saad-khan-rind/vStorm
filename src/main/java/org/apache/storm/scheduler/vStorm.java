@@ -3,6 +3,7 @@ package org.apache.storm.scheduler;
 import java.util.*;
 import java.util.Map.Entry;
 
+import com.google.common.base.Function;
 import org.apache.storm.metric.StormMetricsRegistry;
 import org.apache.storm.shade.com.google.common.annotations.VisibleForTesting;
 import org.apache.storm.shade.com.google.common.collect.Sets;
@@ -159,11 +160,14 @@ public class vStorm implements IScheduler {
 
         List<ExecutorDetails> executors = new ArrayList<>(reassignExecutors);
         executors.sort(Comparator.comparingInt(ExecutorDetails::getStartTask));
+        int division = (int) Math.ceil(executors.size()/(double)reassignSlots.size());
 
-        for (int i = 0; i < executors.size(); i++) {
-            reassignment.put(executors.get(i), reassignSlots.get(i % reassignSlots.size()));
+        for (int i = 0,k=0; i < executors.size(); i++) {
+            reassignment.put(executors.get(i), reassignSlots.get(k));
+            if(i % division == 0 && i!=0) {
+                k++;
+            }
         }
-
         if (reassignment.size() != 0) {
             LOG.info("Available slots: {}", availableSlots);
         }
