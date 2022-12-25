@@ -163,11 +163,17 @@ public class vStorm implements IScheduler {
         int division = (int) Math.ceil(executors.size()/(double)reassignSlots.size());
 
         for (int i = 0,k=0; i < executors.size(); i++) {
-            reassignment.put(executors.get(i), reassignSlots.get(k));
             if(i % division == 0 && i!=0) {
                 k++;
             }
+            reassignment.put(executors.get(i), reassignSlots.get(k));
+            System.out.println("executor = " + i + " to slot = " + k);
+
         }
+//        for (int i = 0; i < executors.size(); i++) {
+//            System.out.println("executor = " + i + " to slot = " + i % reassignSlots.size());
+//            reassignment.put(executors.get(i), reassignSlots.get(i % reassignSlots.size()));
+//        }
         if (reassignment.size() != 0) {
             LOG.info("Available slots: {}", availableSlots);
         }
