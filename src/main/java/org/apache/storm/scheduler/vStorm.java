@@ -103,6 +103,8 @@ public class vStorm implements IScheduler {
                 } else {
                     slots = new ArrayList<>();
                     slotGroups.put(node, slots);
+
+
                 }
                 slots.add(slot);
             }
