@@ -80,47 +80,31 @@ public class vStorm implements IScheduler {
     private static final Logger LOG = LoggerFactory.getLogger(EvenScheduler.class);
 
     @VisibleForTesting
-    public static List<WorkerSlot> sortSlots(List<WorkerSlot> availableSlots) {
-        //For example, we have three nodes(supervisor1, supervisor2, supervisor3) cluster:
-        //slots before sort:
-        //supervisor1:6700, supervisor1:6701,
-        //supervisor2:6700, supervisor2:6701, supervisor2:6702,
-        //supervisor3:6700, supervisor3:6703, supervisor3:6702, supervisor3:6701
-        //slots after sort:
-        //supervisor3:6700, supervisor2:6700, supervisor1:6700,
-        //supervisor3:6701, supervisor2:6701, supervisor1:6701,
-        //supervisor3:6702, supervisor2:6702,
-        //supervisor3:6703
-
-        if (availableSlots != null && availableSlots.size() > 0) {
-            // group by node
-            Map<String, List<WorkerSlot>> slotGroups = new TreeMap<>();
+    public static List<WorkerSlot> sortSlots(Cluster cluster) {
+        List<WorkerSlot> availableSlots = cluster.getAvailableSlots();
+        if(availableSlots!=null && availableSlots.size()>0) {
+            List<WorkerSlot> sortedSlots = new ArrayList<>();
+            List<Double> powers = new ArrayList<>();
             for (WorkerSlot slot : availableSlots) {
-                String node = slot.getNodeId();
-                List<WorkerSlot> slots;
-                if (slotGroups.containsKey(node)) {
-                    slots = slotGroups.get(node);
-                } else {
-                    slots = new ArrayList<>();
-                    slotGroups.put(node, slots);
-
-
+                SupervisorDetails supervisorDetails = cluster.getSupervisorById(slot.getNodeId());
+                double power = ((0.8 * supervisorDetails.getTotalResources().getTotalCpu()) + ((1 - 0.8) * supervisorDetails.getTotalResources().getTotalMemoryMb()));
+                powers.add(power);
+                sortedSlots.add(slot);
+            }
+            for (int i = 0; i < sortedSlots.size(); i++) {
+                for (int j = 1; j < sortedSlots.size(); j++) {
+                    if (powers.get(j - 1) < powers.get(j)) {
+                        Collections.swap(powers, j - 1, j);
+                        Collections.swap(sortedSlots, j - 1, j);
+                    }
                 }
-                slots.add(slot);
             }
-
-            // sort by port: from small to large
-            for (List<WorkerSlot> slots : slotGroups.values()) {
-                slots.sort(Comparator.comparingInt(WorkerSlot::getPort));
+            for (int i = 0; i < sortedSlots.size(); i++){
+                System.out.println("slot id = "+sortedSlots.get(i).getId());
+                System.out.println("power of slot = "+powers.get(i));
             }
-
-            // sort by available slots size: from large to small
-            List<List<WorkerSlot>> list = new ArrayList<>(slotGroups.values());
-            list.sort((o1, o2) -> o2.size() - o1.size());
-
-            return ServerUtils.interleaveAll(list);
+            return sortedSlots;
         }
-
         return null;
     }
 
@@ -139,7 +123,7 @@ public class vStorm implements IScheduler {
         Map<WorkerSlot, List<ExecutorDetails>> aliveAssigned = getAliveAssignedWorkerSlotExecutors(cluster, topology.getId());
         int totalSlotsToUse = Math.min(topology.getNumWorkers(), availableSlots.size() + aliveAssigned.size());
 
-        List<WorkerSlot> sortedList = sortSlots(availableSlots);
+        List<WorkerSlot> sortedList = sortSlots(cluster);
         if (sortedList == null) {
             LOG.error("No available slots for topology: {}", topology.getName());
             return new HashMap<>();
@@ -169,7 +153,6 @@ public class vStorm implements IScheduler {
                 k++;
             }
             reassignment.put(executors.get(i), reassignSlots.get(k));
-            System.out.println("executor = " + i + " to slot = " + k);
 
         }
 //        for (int i = 0; i < executors.size(); i++) {
@@ -191,9 +174,6 @@ public class vStorm implements IScheduler {
             for (Map.Entry<WorkerSlot, List<ExecutorDetails>> entry : nodePortToExecutors.entrySet()) {
                 WorkerSlot nodePort = entry.getKey();
                 List<ExecutorDetails> executors = entry.getValue();
-                System.out.println("nodeport = "+nodePort.toString());
-                System.out.println("topologyId = "+topologyId.toString());
-                System.out.println("executors = "+executors.toString());
                 cluster.assign(nodePort, topologyId, executors);
             }
         }
