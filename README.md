@@ -1,5 +1,5 @@
 # vStorm
-# to run the scheduler independent of UI
+//to run the scheduler independent of UI
 # install the apache storm setup
 # compile the maven and create a jar file of scheduler 
 # the jar file is created in the target folder of maven project
