@@ -11,6 +11,6 @@
 ## zkServer.sh start
 ## storm nimbus
 #### command for terminal 2
-## vstorm supervisor
+## storm supervisor
 #### command for terminal 3
 ## storm ui
